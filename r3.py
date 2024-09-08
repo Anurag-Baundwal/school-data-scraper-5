@@ -440,8 +440,12 @@ async def process_school(school_data, url_column, sheet_name):
                 # ==== SAVE TO BOTH CURRENT AND HISTORIC DBs ====
                 current_week = isoweek.Week.thisweek()
                 current_week_str = f"{current_week.year}-W{current_week.week:02d}"
-                historic_collection_name = f"players_{current_week_str[:4]}_{current_week_str[-2:]}"
+                # historic_collection_name = f"players_{current_week_str[:4]}_{current_week_str[-2:]}"
+                # Get collection names
+                current_collection_name = get_collection_name(sheet_name)
+                historic_collection_name = get_collection_name(sheet_name, current_week_str)
                 historic_collection = historic_db[historic_collection_name]
+                players_collection_current = current_db[current_collection_name]
 
                 player_data = {
                     "school": school_name,
@@ -550,6 +554,13 @@ async def process_school(school_data, url_column, sheet_name):
             'total_tokens': 0
         }
 
+def get_collection_name(sheet_name, week_str=None):
+    sheet_name_formatted = sheet_name.replace(" ", "_")
+    if week_str:
+        return f"players_{week_str}_{sheet_name_formatted}"
+    else:
+        return f"players_current_{sheet_name_formatted}"
+    
 def track_changes(player_data, sheet_name, current_week_str):
     school_name = player_data['school']
     current_players = set(p['name'] for p in player_data['players'])
@@ -560,8 +571,8 @@ def track_changes(player_data, sheet_name, current_week_str):
     else:
         previous_week_obj = isoweek.Week(int(current_week_str[:4]), int(current_week_str[-2:]) - 1)
     previous_week_str = f"{previous_week_obj.year}-W{previous_week_obj.week:02d}"
-    previous_week_collection_name = f"players_{previous_week_str[:4]}_{previous_week_str[-2:]}"
-
+    # previous_week_collection_name = f"players_{previous_week_str[:4]}_{previous_week_str[-2:]}"
+    previous_week_collection_name = get_collection_name(sheet_name, previous_week_str)
     previous_players = set()
     if previous_week_collection_name in historic_db.list_collection_names():
         previous_week_data = historic_db[previous_week_collection_name].find_one({"school": school_name})
@@ -647,24 +658,34 @@ async def main():
     api_key_manager = APIKeyManager(GEMINI_API_KEYS)
     total_tokens_used = 0
     
+    sheet_to_process = "NCAA D1"
+
     try:
         # ==== CLEAR CURRENT DB's PLAYERS COLLECTION ====
         players_collection_current.delete_many({})
-
-        # ==== CLEAR HISTORIC DB's COLLECTION FOR CURRENT WEEK (IF EXISTS) ====
-        current_week = isoweek.Week.thisweek()
-        current_week_str = f"{current_week.year}-W{current_week.week:02d}"
-        historic_collection_name = f"players_{current_week_str[:4]}_{current_week_str[-2:]}"
-        if historic_collection_name in historic_db.list_collection_names():
-            historic_db[historic_collection_name].delete_many({})
 
         # ==== READ INPUT FILE AND SCRAPE EACH SHEET ====
         input_file = r"C:\Users\dell3\source\repos\school-data-scraper-4\Freelancer_Data_Mining_Project_mini.xlsx"
         xls = await load_excel_data(input_file)
         if xls is not None:
+            # Skip sheets which do not have colleges in them
             for sheet_name in xls.sheet_names:
                 if sheet_name in ["Softball Conferences", "Baseball Conferences", "DNU_States", "Freelancer Data"]:
                     continue
+                # Skip sheets except for the one we want to process in this run
+                if sheet_name != sheet_to_process:
+                    logger.info(f"Skipping sheet: {sheet_name}")
+                    continue
+                
+                # ==== CLEAR OLD DATA FROM CURRENT WEEK'S COLLECTIONS ====               
+                current_week = isoweek.Week.thisweek()
+                current_week_str = f"{current_week.year}-W{current_week.week:02d}"
+                current_collection_name = get_collection_name(sheet_name)
+                historic_collection_name = get_collection_name(sheet_name, current_week_str)
+                current_db[current_collection_name].delete_many({})
+                if historic_collection_name in historic_db.list_collection_names():
+                    historic_db[historic_collection_name].delete_many({})
+
                 logger.info(f"\nProcessing sheet: {sheet_name}")
                 df = pd.read_excel(xls, sheet_name=sheet_name)
                 _, sheet_tokens = await process_sheet(sheet_name, df)
