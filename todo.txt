@@ -1,0 +1,45 @@
+change reports: 
+improve format - like so:
+
+=======================
+Sheet Name: NCAA D1
+=======================
+
+School: Lipscomb University
+  New Hires: Ally Ivey, Kristin Ryman, Bailey Vannoy
+  Departures: None
+
+School: Lipscomb University
+  New Hires: Ally Ivey, Kristin Ryman, Bailey Vannoy
+  Departures:
+
+=======================
+Sheet Name: NCAA D2
+=======================
+
+
+
+
+but this would require that schools be processed in a fixed order
+
+
+second todo item - don't clear entire current collection. instead, update it one school at a time. this is so that the database has data even scraping is running and the website can access data at all times.
+
+third todo item - add modifications to rosters scraper - change input to mini, skip sheets, etc
+
+fourth todo item - download logos from recruitment form urls. feed images to gemini and ask it to return the filename of the one that's most likely to be the logo and ignore random images like google logo.
+
+fifth todo item - modify coaches scraper to scrape director of operations and recruiment officer info as Owls_Welcome_Letter_2023
+
+sixth todo item - host the 4 scripts
+
+more todos - change input from mini to full excel file. use atlast instead of normal mongo db
+
+note: validation is not required in majors scraper
+
+
+NEW TODOS-
+
+1. Modify prompt to scrape director of operations (either of softball or athletics) and recruitment personnel in addition to coaches
+2. Add proxies to try and scrape some of the pages where the script is failing
+3. Modify script and database setup to only scrape one sheet at a time

@@ -1,0 +1,74 @@
+2 databases - current_db and historic_db
+collections - 4 types 
+
+historic_db
+coaches-year-week
+historic_collection_name = f"coaches_{current_week[:4]}_{current_week[-2:]}"
+coaches_24
+coaches_week24
+
+current_db
+collection name - "coaches"
+
+
+in main method
+
+copy data from current db to historic db with appropriate collection
+
+
+
+
+
+
+CHANGE TRACKING:
+
+
+txt file
+
+=================================
+NCAA D1
+================================
+School name: 
+New hires 
+Departures
+
+School name 2:
+New hires 
+Departures
+
+=================================
+NCAA D2 (sheet 2)
+School name: 
+New hires 
+Departures
+
+School name 2:
+New hires 
+Departures
+
+
+current data
+check historic db (check collection for current week - 1)
+
+
+coaches_change_tracking.txt
+players 
+new players 
+Departures
+
+majors
+new addtions 
+removals
+
+logos - one time scrape - no changes ---------------------------------------
+
+
+
+
+
+
+
+
+
+open url -> get body html -> send to gemini for scraping -> json output -> validation -> save on filesystem and mongodb
+get body html -> replace requests with selenium
