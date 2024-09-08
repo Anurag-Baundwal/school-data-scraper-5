@@ -356,13 +356,27 @@ async def gemini_based_scraping(url, school_name, sheet_name):
             )
             
             prompt = f"""
-            Analyze the HTML content of the coaching staff webpage for {school_name} and extract information ONLY for softball *coaches* (head coach and assistant coaches - sometimes you'll see interim coaches too. Include those). They will typically be found under a softball section, and will usually only be 3-4 in number. Do not include coaches from other sports or general staff members. Extract the following information for each softball coach:
+            Analyze the HTML content of the coaching staff webpage for {school_name} and extract information for the following softball staff members:
+            - Head Coach 
+            - Assistant Coaches 
+            - Director of Operations or similar (if available)
+            - Recruiting Coordinator or similar (if available)
+
+            Do not include data for staff members who have do not have these titles. Also do not include coaches for sports other than softball. 
+            
+            If the coaches are serving on an interim basis you should still include them.
+
+            The Head Coach and Assistant Coaches will typically be found under a softball section. The Director of Operations and Recruiting Coordinator may be listed within the softball section or in a general staff directory. 
+            
+            Extract the following information for each relevant staff member:
             - Name
             - Title
             - Email address (if available)
             - Phone number (If available. Sometimes it will be in the section heading (eg:Softball - Phone: 828-262-7310))
             - Twitter/X handle (if available)
-            Note: Phone number is always 10 digits. If some part is in the section heading and some part is in the row for the particular coach, piece together the information to find the full phone number.
+            
+            Note: Phone numbers are always 10 digits. If a section heading provides part of the phone number (e.g., an area code), assume it applies to all staff members listed in that section unless a different full 10-digit number is provided for a specific staff member. Similarly, if only the last few digits of a phone number are given for a staff member, check if a common prefix is provided or implied elsewhere on the page to inteliigently construct the full 10-digit number.
+
             Format the output as a JSON string with the following structure:
             {{
                 "success": true/false,
@@ -378,8 +392,11 @@ async def gemini_based_scraping(url, school_name, sheet_name):
                     ...
                 ]
             }}
-            If you can find any softball coaching staff information, even if incomplete, set "success" to true and include the available data. If no softball coaches are found, set "success" to false and provide the reason "no softball coaches found".
+            
+            If you can find any of the requested softball staff information, even if incomplete, set "success" to true and include the available data. If none of the requested staff members are found, set "success" to false and provide the reason "no relevant softball staff found".
+            
             Important: Ensure all names, including those with non-English characters, are preserved exactly as they appear in the HTML. Do not escape or modify any special characters in names or other fields.
+
             The response should be a valid JSON string only, without any additional formatting or markdown syntax.
             """
 
