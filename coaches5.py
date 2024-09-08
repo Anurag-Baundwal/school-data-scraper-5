@@ -42,7 +42,7 @@ historic_db = client["historic_data_softball"]
 current_db = client["current_data_softball"]
 
 # Collections (created if they don't exist)
-coaches_collection_current = current_db["coaches"]
+# coaches_collection_current = current_db["coaches"]
 # debug_info_collection_current = current_db["debug_info"]
 
 # Insert test documents
@@ -439,6 +439,13 @@ async def gemini_based_scraping(url, school_name, sheet_name):
 
     return None, False, 0, 0
 
+def get_collection_name(sheet_name, week_str=None):
+    sheet_name_formatted = sheet_name.replace(" ", "_")
+    if week_str:
+        return f"coaches_{week_str}_{sheet_name_formatted}"
+    else:
+        return f"coaches_current_{sheet_name_formatted}"
+    
 async def process_school(school_data, sheet_name, staff_directory_column, coaches_url_column):
     school_name = school_data['School']
     max_retries = 3
@@ -531,8 +538,12 @@ async def process_school(school_data, sheet_name, staff_directory_column, coache
     # ==== SAVE TO BOTH CURRENT AND HISTORIC DBs ====
     current_week = isoweek.Week.thisweek()
     current_week_str = f"{current_week.year}-W{current_week.week:02d}"
-    historic_collection_name = f"coaches_{current_week_str[:4]}_{current_week_str[-2:]}"
+    # historic_collection_name = f"coaches_{current_week_str[:4]}_{current_week_str[-2:]}"
+    # Create a separate collection for each sheet of the excel file 
+    historic_collection_name = get_collection_name(sheet_name, current_week_str)
     historic_collection = historic_db[historic_collection_name]
+    current_collection_name = get_collection_name(sheet_name)
+    coaches_collection_current = current_db[current_collection_name]
     
     coach_data = {
         "school": final_result['school'],
@@ -554,13 +565,15 @@ def track_changes(coach_data, sheet_name, current_week_str):
     school_name = coach_data['school']
     current_coaches = set(c['name'] for c in coach_data['coachingStaff'])
 
-    # Get previous week's data
+    # Get previous week's data (using sheet-specific collection name)
     if current_week_str.endswith("W01"):
         previous_week_obj = isoweek.Week(int(current_week_str[:4]) - 1, isoweek.Week.last_week_of_year(int(current_week_str[:4]) - 1).week)
     else:
         previous_week_obj = isoweek.Week(int(current_week_str[:4]), int(current_week_str[-2:]) - 1)
     previous_week_str = f"{previous_week_obj.year}-W{previous_week_obj.week:02d}"
-    previous_week_collection_name = f"coaches_{previous_week_str[:4]}_{previous_week_str[-2:]}"
+
+    # Construct previous week's collection name using get_collection_name
+    previous_week_collection_name = get_collection_name(sheet_name, previous_week_str)
 
     previous_coaches = set()
     if previous_week_collection_name in historic_db.list_collection_names():
@@ -584,7 +597,7 @@ def track_changes(coach_data, sheet_name, current_week_str):
         f.write(f"  New Hires: {', '.join(new_hires) if new_hires else 'None'}\n") 
         f.write(f"  Departures: {', '.join(departures) if departures else 'None'}\n")
 
-async def fill_missing_data(coach_data, current_week):
+async def fill_missing_data(coach_data, sheet_name, current_week):
     current_week_obj = isoweek.Week.thisweek()
     if current_week_obj.week == 1:
         previous_week_obj = isoweek.Week(current_week_obj.year - 1, isoweek.Week.last_week_of_year(current_week_obj.year - 1).week)
@@ -592,7 +605,9 @@ async def fill_missing_data(coach_data, current_week):
         previous_week_obj = isoweek.Week(current_week_obj.year, current_week_obj.week - 1)
 
     previous_week_str = f"{previous_week_obj.year}-W{previous_week_obj.week:02d}"
-    previous_week_collection_name = f"coaches_{previous_week_str[:4]}_{previous_week_str[-2:]}"
+
+    # Construct previous week's collection name using get_collection_name
+    previous_week_collection_name = get_collection_name(sheet_name, previous_week_str)
 
     # Check if the previous week's collection exists
     if previous_week_collection_name in historic_db.list_collection_names():
@@ -607,20 +622,20 @@ async def fill_missing_data(coach_data, current_week):
                     if not coach.get(attr) and matching_coach["coach"].get(attr):
                         coach[attr] = matching_coach["coach"][attr]
 
-def combine_coach_data(staff_directory_coaches, coaches_url_coaches):
-    # Prioritize staff directory data, fill in missing attributes from coaches URL
-    combined_coaches = staff_directory_coaches.copy()
-    for coach_url in coaches_url_coaches:
-        for coach_sd in combined_coaches:
-            if coach_url['name'] == coach_sd['name']:
-                for attr in ['title', 'email', 'phone', 'twitter']:
-                    if not coach_sd.get(attr) and coach_url.get(attr):
-                        coach_sd[attr] = coach_url[attr]
-                break
-        else:
-            # Coach from coaches URL not found in staff directory, add them
-            combined_coaches.append(coach_url)
-    return combined_coaches
+# def combine_coach_data(staff_directory_coaches, coaches_url_coaches):
+#     # Prioritize staff directory data, fill in missing attributes from coaches URL
+#     combined_coaches = staff_directory_coaches.copy()
+#     for coach_url in coaches_url_coaches:
+#         for coach_sd in combined_coaches:
+#             if coach_url['name'] == coach_sd['name']:
+#                 for attr in ['title', 'email', 'phone', 'twitter']:
+#                     if not coach_sd.get(attr) and coach_url.get(attr):
+#                         coach_sd[attr] = coach_url[attr]
+#                 break
+#         else:
+#             # Coach from coaches URL not found in staff directory, add them
+#             combined_coaches.append(coach_url)
+#     return combined_coaches
 
 # version for semaphores
 async def process_sheet(sheet_name, df):
@@ -746,58 +761,43 @@ async def main():
     api_key_manager = APIKeyManager(GEMINI_API_KEYS)
     total_tokens_used = 0
 
-    try:
-        # ==== CLEAR CURRENT DB's COACHES COLLECTION ====
-        coaches_collection_current.delete_many({})
-
-        # ==== CLEAR HISTORIC DB's COLLECTION FOR CURRENT WEEK (IF EXISTS) ====
-        current_week = isoweek.Week.thisweek()
-        current_week_str = f"{current_week.year}-W{current_week.week:02d}"
-        historic_collection_name = f"coaches_{current_week_str[:4]}_{current_week_str[-2:]}"
-        if historic_collection_name in historic_db.list_collection_names():
-            historic_db[historic_collection_name].delete_many({})
-        
+    sheet_to_process = "NCAA D1"
+    try:        
         # ==== PROCESS SHEETS ====
         xls = await load_excel_data(input_file)
         if xls is not None:
             for sheet_name in xls.sheet_names:
                 if sheet_name in ["Softball Conferences", "Baseball Conferences", "DNU_States", "Freelancer Data"]:
                     continue
+                
+                # Skip sheets except for the one we want to process in this run
+                if sheet_name != sheet_to_process:
+                    logger.info(f"Skipping sheet: {sheet_name}")
+                    continue  # Skip to the next sheet
                 logger.info(f"\nProcessing sheet: {sheet_name}")
+
+                # Clean old data to make room for new data                
+                current_week = isoweek.Week.thisweek()
+                current_week_str = f"{current_week.year}-W{current_week.week:02d}"
+                current_collection_name = get_collection_name(sheet_name)
+                historic_collection_name = get_collection_name(sheet_name, current_week_str)
+                current_db[current_collection_name].delete_many({})
+                if historic_collection_name in historic_db.list_collection_names():
+                    historic_db[historic_collection_name].delete_many({})
+                
                 df = pd.read_excel(xls, sheet_name=sheet_name)
                 _, sheet_tokens = await process_sheet(sheet_name, df)  # Get results and tokens directly
                 total_tokens_used += sheet_tokens
 
+                # ==== FILL MISSING DATA from previous week ====
+                current_collection = current_db[current_collection_name]
+                for coach_data in current_collection.find():
+                    await fill_missing_data(coach_data, sheet_name, current_week)
+                    current_collection.update_one({"_id": coach_data["_id"]}, {"$set": coach_data})
+
             logger.info(f"\nTotal tokens used across all sheets: {total_tokens_used}")
         else:
             logger.error("Failed to load Excel file. Exiting.")
-        
-        # # ==== PROCESS SHEETS ====
-        # xls = await load_excel_data(input_file)
-        # if xls is not None:
-        #     sheet_tasks = []
-        #     for sheet_name in xls.sheet_names:
-        #         if sheet_name in ["Softball Conferences", "Baseball Conferences", "DNU_States", "Freelancer Data"]:
-        #             continue
-        #         logger.info(f"\nProcessing sheet: {sheet_name}")
-        #         df = pd.read_excel(xls, sheet_name=sheet_name)
-        #         sheet_tasks.append(process_sheet(sheet_name, df))
-
-        #     results = await asyncio.gather(*sheet_tasks)
-
-        #     for _, sheet_tokens in results:
-        #         total_tokens_used += sheet_tokens
-
-        #     logger.info(f"\nTotal tokens used across all sheets: {total_tokens_used}")
-        # else:
-        #     logger.error("Failed to load Excel file. Exiting.")
-
-
-
-        # ==== FILL MISSING DATA from previous week ====
-        for coach_data in coaches_collection_current.find():
-            await fill_missing_data(coach_data, current_week)
-            coaches_collection_current.update_one({"_id": coach_data["_id"]}, {"$set": coach_data})
 
     except Exception as e:
         logger.error(f"An error occurred in the main function: {str(e)}")
