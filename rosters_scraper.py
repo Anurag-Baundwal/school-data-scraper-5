@@ -1,3 +1,5 @@
+# python script for scraping player info from athletics rosters
+# previously named r3.py
 import asyncio
 import re
 import shutil

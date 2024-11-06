@@ -1,4 +1,4 @@
-# create a mini version of the input excel file for quickly testing changes to the web scraping scripts
+# create a mini version of the input excel file for quickly testing changes to the code
 
 import pandas as pd
 import random

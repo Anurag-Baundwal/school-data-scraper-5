@@ -1,4 +1,5 @@
 # college majors scraper
+# previously named majors2.py
 import os
 import pandas as pd
 import pymongo

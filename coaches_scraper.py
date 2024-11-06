@@ -1,3 +1,5 @@
+# python script for scraping softball coaches data
+# previously named coaches5.py
 import asyncio
 import re
 import aiohttp
