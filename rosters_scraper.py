@@ -15,7 +15,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 import psutil
-from config import GEMINI_API_KEYS
+from config import GEMINI_API_KEYS, INPUT_EXCEL_FILE
 import random
 import logging
 from datetime import datetime
@@ -667,7 +667,8 @@ async def main():
         players_collection_current.delete_many({})
 
         # ==== READ INPUT FILE AND SCRAPE EACH SHEET ====
-        input_file = r"C:\Users\dell3\source\repos\school-data-scraper-4\Freelancer_Data_Mining_Project_mini.xlsx"
+        # input_file = r"C:\Users\dell3\source\repos\school-data-scraper-4\Freelancer_Data_Mining_Project_mini.xlsx"
+        input_file = INPUT_EXCEL_FILE
         xls = await load_excel_data(input_file)
         if xls is not None:
             # Skip sheets which do not have colleges in them

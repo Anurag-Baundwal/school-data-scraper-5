@@ -25,6 +25,7 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import TimeoutException
 import isoweek
+from config import INPUT_EXCEL_FILE
 
 # ===== MONGO DB SETUP =====
 client = pymongo.MongoClient("mongodb://localhost:27017", maxPoolSize=10)
@@ -430,7 +431,8 @@ async def main():
     if historic_collection_name in historic_db.list_collection_names():
         historic_db[historic_collection_name].delete_many({})
     
-    input_file = r"C:\Users\dell3\source\repos\school-data-scraper-4\Freelancer_Data_Mining_Project_mini.xlsx"   
+    # input_file = r"C:\Users\dell3\source\repos\school-data-scraper-4\Freelancer_Data_Mining_Project_mini.xlsx"
+    input_file = INPUT_EXCEL_FILE   
     xls = pd.ExcelFile(input_file)
     
     for sheet_name in xls.sheet_names:

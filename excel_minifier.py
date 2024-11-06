@@ -1,10 +1,13 @@
 # create a mini version of the input excel file for quickly testing changes to the code
 
+import os
 import pandas as pd
 import random
+from config import INPUT_EXCEL_FILE
 
-input_file = r"C:\Users\dell3\source\repos\school-data-scraper-4\Freelancer_Data_Mining_Project.xlsx"
-output_file = r"C:\Users\dell3\source\repos\school-data-scraper-4\Freelancer_Data_Mining_Project_mini.xlsx"
+input_file = INPUT_EXCEL_FILE
+name, ext = os.path.splitext(input_file)
+output_file = f"{name}_mini{ext}"
 
 # Read the Excel file into a dictionary of DataFrames
 excel_data = pd.read_excel(input_file, sheet_name=None)

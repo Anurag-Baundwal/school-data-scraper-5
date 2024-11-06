@@ -13,7 +13,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from concurrent.futures import ThreadPoolExecutor
-from config import GEMINI_API_KEYS
+from config import GEMINI_API_KEYS, INPUT_EXCEL_FILE
 import random
 import logging
 from datetime import datetime
@@ -771,8 +771,8 @@ sys.stdout = tee
 
 async def main():
     global api_key_manager
-    input_file = r"C:\Users\dell3\source\repos\school-data-scraper-4\Freelancer_Data_Mining_Project_mini.xlsx"
-
+    # input_file = r"C:\Users\dell3\source\repos\school-data-scraper-4\Freelancer_Data_Mining_Project_mini.xlsx"
+    input_file = INPUT_EXCEL_FILE
     delete_old_output("coaches3_v2/scraping-results")
     delete_old_output("coaches3_v2/raw_gemini_outputs")
     delete_old_output("coaches3_v2/body_html_contents")

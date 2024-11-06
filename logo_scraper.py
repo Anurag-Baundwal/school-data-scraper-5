@@ -5,15 +5,13 @@ import requests
 import pandas as pd
 from urllib.parse import urlparse
 from pathlib import Path
+from config import INPUT_EXCEL_FILE
+from config import GOOGLE_API_KEY, SEARCH_ENGINE_ID # for search api
 import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-# Replace with your actual API key and Search Engine ID
-GOOGLE_API_KEY = "AIzaSyDjufCWUGFzTBdtJalsTi7EeorKScgybWc"
-SEARCH_ENGINE_ID = "d626f24be7e0045ed"
 
 # Set a User-Agent to comply with website policies (especially Wikimedia)
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36" # Example User-Agent
@@ -94,8 +92,9 @@ async def process_sheet(sheet_name, df):
 
 
 async def main():
-    # input_file = r"C:\Users\dell3\source\repos\school-data-scraper-4\Freelancer_Data_Mining_Project_mini.xlsx"
-    input_file = r"C:\Users\dell3\source\repos\school-data-scraper-5\Freelancer_Data_Mining_Project_Softball.xlsx"
+    input_file = r"C:\Users\dell3\source\repos\school-data-scraper-5\Freelancer_Data_Mining_Project_Softball_mini.xlsx"
+    # input_file = r"C:\Users\dell3\source\repos\school-data-scraper-5\Freelancer_Data_Mining_Project_Softball.xlsx"
+    # input_file = INPUT_EXCEL_FILE
     xls = pd.ExcelFile(input_file)
 
     if not xls:
